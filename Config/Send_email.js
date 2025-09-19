@@ -2,6 +2,8 @@ import nodemailer from "nodemailer";
 import { EMAIL_USER, EMAIL_PASS } from "./env.config.js";
 import bcrypt from "bcryptjs";
 import OTPverification from "../Models/OTPverification.js";
+import College from "../Models/Colleges.js";
+import User from "../Models/Users.js";
 
 
 const transporter = nodemailer.createTransport({
@@ -59,14 +61,19 @@ export const verifyOtp = async (req, res) => {
     }
 
     // 🔹 Find OTP record
-    const record = await OTPVerification.findOne({ userId, otp });
-    if (!record) return res.status(400).json({ message: "Invalid OTP" });
+    const record = await OTPverification.findOne({ userId });
+    if (!record) return res.status(404).json({ message: "User not found" });
+    const recordOTP = record.otp;
+
+    const isvalid = await bcrypt.compare(otp, recordOTP);
+    if (!isvalid) return res.status(400).json({ message: "Invalid OTP" });
+
     if (record.expiresAt < Date.now()) return res.status(400).json({ message: "OTP expired" });
 
     // 🔹 Try to find in College first
     let updatedUser = await College.findByIdAndUpdate(
       userId,
-      { verified: true },
+      { Verified: true },
       { new: true }
     );
 
@@ -74,15 +81,18 @@ export const verifyOtp = async (req, res) => {
     if (!updatedUser) {
       updatedUser = await User.findByIdAndUpdate(
         userId,
-        { verified: true },
+        { Verified: true },
         { new: true }
       );
     }
+
 
     if (!updatedUser) {
       return res.status(404).json({ message: "User or College not found" });
     }
 
+    // 🔹 Delete OTP record after successful verification
+    await OTPverification.deleteMany({ userId });
     // ✅ Success
     return res.status(200).json({
       message: "OTP verified successfully",

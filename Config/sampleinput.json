@@ -1,8 +1,8 @@
 {
-  "college": "651234abcd1234abcd567890",
-  "branch": "651234abcd1234abcd567891",
+  "collegeId": "68c6b998819e863507774b9c",
+  "branchId": "68cc1a303999f90d732365d7",
   "section": "A",
-  "batch": "2022-2026",
+  "batch": "2023-2027",
   "slots": [
     {
       "day": "Monday",
@@ -10,7 +10,7 @@
         {
           "periodNumber": 1,
           "subject": "Mathematics",
-          "teacher": "651234abcd1234abcd567892",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
           "startTime": "09:00",
           "endTime": "09:50",
           "duration": 50
@@ -18,7 +18,7 @@
         {
           "periodNumber": 2,
           "subject": "Physics",
-          "teacher": "651234abcd1234abcd567893",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
           "startTime": "10:00",
           "endTime": "10:50",
           "duration": 50
@@ -26,7 +26,7 @@
         {
           "periodNumber": 3,
           "subject": "English",
-          "teacher": "651234abcd1234abcd567894",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
           "startTime": "11:00",
           "endTime": "11:50",
           "duration": 50
@@ -34,7 +34,7 @@
         {
           "periodNumber": 4,
           "subject": "Chemistry",
-          "teacher": "651234abcd1234abcd567895",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
           "startTime": "12:00",
           "endTime": "12:50",
           "duration": 50
@@ -42,7 +42,7 @@
         {
           "periodNumber": 5,
           "subject": "Computer Science",
-          "teacher": "651234abcd1234abcd567896",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
           "startTime": "01:00",
           "endTime": "01:50",
           "duration": 50
@@ -55,7 +55,7 @@
         {
           "periodNumber": 1,
           "subject": "Physics",
-          "teacher": "651234abcd1234abcd567893",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
           "startTime": "09:00",
           "endTime": "09:50",
           "duration": 50
@@ -63,7 +63,7 @@
         {
           "periodNumber": 2,
           "subject": "Mathematics",
-          "teacher": "651234abcd1234abcd567892",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
           "startTime": "10:00",
           "endTime": "10:50",
           "duration": 50
@@ -71,7 +71,7 @@
         {
           "periodNumber": 3,
           "subject": "History",
-          "teacher": "651234abcd1234abcd567897",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
           "startTime": "11:00",
           "endTime": "11:50",
           "duration": 50
@@ -79,7 +79,7 @@
         {
           "periodNumber": 4,
           "subject": "Chemistry",
-          "teacher": "651234abcd1234abcd567895",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
           "startTime": "12:00",
           "endTime": "12:50",
           "duration": 50
@@ -87,150 +87,7 @@
         {
           "periodNumber": 5,
           "subject": "English",
-          "teacher": "651234abcd1234abcd567894",
-          "startTime": "01:00",
-          "endTime": "01:50",
-          "duration": 50
-        }
-      ]
-    },
-    {
-      "day": "Wednesday",
-      "periods": [
-        {
-          "periodNumber": 1,
-          "subject": "Computer Science",
-          "teacher": "651234abcd1234abcd567896",
-          "startTime": "09:00",
-          "endTime": "09:50",
-          "duration": 50
-        },
-        {
-          "periodNumber": 2,
-          "subject": "Mathematics",
-          "teacher": "651234abcd1234abcd567892",
-          "startTime": "10:00",
-          "endTime": "10:50",
-          "duration": 50
-        },
-        {
-          "periodNumber": 3,
-          "subject": "Physics",
-          "teacher": "651234abcd1234abcd567893",
-          "startTime": "11:00",
-          "endTime": "11:50",
-          "duration": 50
-        },
-        {
-          "periodNumber": 4,
-          "subject": "Chemistry",
-          "teacher": "651234abcd1234abcd567895",
-          "startTime": "12:00",
-          "endTime": "12:50",
-          "duration": 50
-        },
-        {
-          "periodNumber": 5,
-          "subject": "English",
-          "teacher": "651234abcd1234abcd567894",
-          "startTime": "01:00",
-          "endTime": "01:50",
-          "duration": 50
-        },
-        {
-          "periodNumber": 6,
-          "subject": "Biology",
-          "teacher": "651234abcd1234abcd567898",
-          "startTime": "02:00",
-          "endTime": "02:50",
-          "duration": 50
-        }
-      ]
-    },
-    {
-      "day": "Thursday",
-      "periods": [
-        {
-          "periodNumber": 1,
-          "subject": "Chemistry",
-          "teacher": "651234abcd1234abcd567895",
-          "startTime": "09:00",
-          "endTime": "09:50",
-          "duration": 50
-        },
-        {
-          "periodNumber": 2,
-          "subject": "Physics",
-          "teacher": "651234abcd1234abcd567893",
-          "startTime": "10:00",
-          "endTime": "10:50",
-          "duration": 50
-        },
-        {
-          "periodNumber": 3,
-          "subject": "Mathematics",
-          "teacher": "651234abcd1234abcd567892",
-          "startTime": "11:00",
-          "endTime": "11:50",
-          "duration": 50
-        },
-        {
-          "periodNumber": 4,
-          "subject": "Computer Science",
-          "teacher": "651234abcd1234abcd567896",
-          "startTime": "12:00",
-          "endTime": "12:50",
-          "duration": 50
-        },
-        {
-          "periodNumber": 5,
-          "subject": "English",
-          "teacher": "651234abcd1234abcd567894",
-          "startTime": "01:00",
-          "endTime": "01:50",
-          "duration": 50
-        }
-      ]
-    },
-    {
-      "day": "Friday",
-      "periods": [
-        {
-          "periodNumber": 1,
-          "subject": "Biology",
-          "teacher": "651234abcd1234abcd567898",
-          "startTime": "09:00",
-          "endTime": "09:50",
-          "duration": 50
-        },
-        {
-          "periodNumber": 2,
-          "subject": "Mathematics",
-          "teacher": "651234abcd1234abcd567892",
-          "startTime": "10:00",
-          "endTime": "10:50",
-          "duration": 50
-        },
-        {
-          "periodNumber": 3,
-          "subject": "Chemistry",
-          "teacher": "651234abcd1234abcd567895",
-          "startTime": "11:00",
-          "endTime": "11:50",
-          "duration": 50
-        },
-        {
-          "periodNumber": 4,
-          "subject": "English",
-          "teacher": "651234abcd1234abcd567894",
-          "startTime": "12:00",
-          "endTime": "12:50",
-          "duration": 50
-        },
-        {
-          "periodNumber": 5,
-          "subject": "Computer Science",
-          "teacher": "651234abcd1234abcd567896",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
           "startTime": "01:00",
           "endTime": "01:50",
           "duration": 50

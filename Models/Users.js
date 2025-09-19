@@ -63,19 +63,19 @@ const userSchema = new mongoose.Schema({
     }
 });
 
-userSchema.pre('save', function (next) {
-    if (this.role === 'STUDENT') {
-        if (!this.branchIds || this.branchIds.length !== 1) {
-            return next(new Error('A student must belong to exactly one branch.'));
-        }
-    }
-    if (this.role === 'TEACHER') {
-        if (!this.branchIds || this.branchIds.length < 1) {
-            return next(new Error('A teacher must belong to at least one branch.'));
-        }
-    }
-    next();
-});
+// userSchema.pre('save', function (next) {
+//     if (this.role === 'STUDENT') {
+//         if (!this.branchIds || this.branchIds.length !== 1) {
+//             return next(new Error('A student must belong to exactly one branch.'));
+//         }
+//     }
+//     if (this.role === 'TEACHER') {
+//         if (!this.branchIds || this.branchIds.length < 1) {
+//             return next(new Error('A teacher must belong to at least one branch.'));
+//         }
+//     }
+//     next();
+// });
 
 const User = mongoose.model('User', userSchema);
 export default User;

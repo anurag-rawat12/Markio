@@ -3,12 +3,12 @@ import User from '../Models/Users.js';
 
 const TimeTableSchema = new mongoose.Schema(
   {
-    college: {
+    collegeId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'College',
       required: true,
     },
-    branch: {
+    branchId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Branch',
       required: true,
@@ -39,7 +39,7 @@ const TimeTableSchema = new mongoose.Schema(
           {
             periodNumber: { type: Number, required: true }, // 1, 2, 3...
             subject: { type: String, required: true },      // e.g., "DBMS"
-            teacher: {
+            teacherId: {
               type: mongoose.Schema.Types.ObjectId,
               ref: 'User',
               required: true,
@@ -51,6 +51,8 @@ const TimeTableSchema = new mongoose.Schema(
                 message: 'Assigned user must be a TEACHER',
               },
             },
+            TotalStudent: { type: Number, default: 0 },
+            TotalAttendanceMarked: { type: Number, default: 0 },
             startTime: { type: String, required: true }, // e.g., "09:30"
             endTime: { type: String, required: true },   // e.g., "10:20"
             duration: { type: Number },                  // optional
