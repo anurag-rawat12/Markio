@@ -51,15 +51,27 @@ const TimeTableSchema = new mongoose.Schema(
                 message: 'Assigned user must be a TEACHER',
               },
             },
-            TotalStudent: { type: Number, default: 0 },
-            TotalAttendanceMarked: { type: Number, default: 0 },
             startTime: { type: String, required: true }, // e.g., "09:30"
             endTime: { type: String, required: true },   // e.g., "10:20"
             duration: { type: Number },                  // optional
-            activeCode: {
-              code: { type: String },     // OTP/code
-              expiresAt: { type: Date },  // expiry time
-            },
+
+            // Permanent attendance statistics
+            totalClassesConducted: { type: Number, default: 0 },
+            totalStudentsAttended: { type: Number, default: 0 },
+
+            // Attendance history for this period
+            attendanceHistory: {
+              type: [
+                {
+                  date: { type: Date, required: true },
+                  totalStudents: { type: Number, required: true },
+                  attendedStudents: { type: Number, required: true },
+                  attendancePercentage: { type: Number, required: true },
+                  createdAt: { type: Date, default: Date.now }
+                }
+              ],
+              default: []   // 👈 Important
+            }
           },
         ],
       },
