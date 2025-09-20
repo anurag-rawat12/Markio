@@ -40,6 +40,7 @@ const userSchema = new mongoose.Schema({
         type: String
     },
 
+    // Attendance statistics (for students)
     totalAttendance: {
         type: Number,
         default: 0
@@ -49,6 +50,40 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    
+    // Total classes held (for calculating attendance percentage)
+    totalClassesHeld: {
+        type: Number,
+        default: 0
+    },
+    
+    // Attendance percentage (calculated field)
+    attendancePercentage: {
+        type: Number,
+        default: 0,
+        get: function() {
+            if (this.totalClassesHeld === 0) return 0;
+            return Math.round((this.attendedClasses / this.totalClassesHeld) * 100);
+        }
+    },
+    
+    // Detailed attendance history for students
+    attendanceRecords: [{
+        timetableId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'TimeTable'
+        },
+        subject: String,
+        date: Date,
+        day: String,
+        periodNumber: Number,
+        status: {
+            type: String,
+            enum: ['Present', 'Absent'],
+            default: 'Present'
+        },
+        markedAt: { type: Date, default: Date.now }
+    }],
 
     rollNumber: {
         type: String
