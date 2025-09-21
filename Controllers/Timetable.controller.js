@@ -74,7 +74,7 @@ export const CreateTimetable = async (req, res) => {
 
 export const GetTimetableById = async (req, res) => {
   try {
-    const { id } = req.params; // this is branchId (or timetableId if you prefer)
+    const { id } = req.params; 
 
     // 🔹 Fetch timetable(s) for a branch
     const timetables = await TimeTable.find({ collegeId: id })
@@ -211,6 +211,112 @@ export const GetTeacherTimetable = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error fetching teacher timetable:", error);
+    return res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+};
+
+export const GetStudentTimetable = async (req, res) => {
+  try {
+    const { branchId } = req.params; // fetch timetable for this branch/class
+    const { day } = req.query; // optional day filter
+
+    if (!branchId) {
+      return res.status(400).json({ message: "Branch ID is required" });
+    }
+
+    const branchObjectId = new mongoose.Types.ObjectId(branchId);
+
+    const pipeline = [
+      {
+        $match: { branchId: branchObjectId }
+      },
+      {
+        $lookup: {
+          from: "branches",
+          localField: "branchId",
+          foreignField: "_id",
+          as: "branch"
+        }
+      },
+      { $unwind: "$branch" },
+      {
+        $lookup: {
+          from: "colleges",
+          localField: "collegeId",
+          foreignField: "_id",
+          as: "college"
+        }
+      },
+      { $unwind: "$college" },
+      {
+        $project: {
+          college: { institutionName: "$college.institutionName", adminEmail: "$college.adminEmail" },
+          branch: { branchName: "$branch.branchName", branchCode: "$branch.branchCode", section: "$branch.section", year: "$branch.year" },
+          slots: {
+            $map: {
+              input: "$slots",
+              as: "slot",
+              in: {
+                day: "$$slot.day",
+                periods: "$$slot.periods" // include all periods
+              }
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          college: 1,
+          branch: 1,
+          slots: {
+            $filter: {
+              input: "$slots",
+              as: "slot",
+              cond: day ? { $eq: ["$$slot.day", day] } : { $ne: ["$$slot.day", null] }
+            }
+          }
+        }
+      }
+    ];
+
+    const timetables = await TimeTable.aggregate(pipeline);
+
+    // Flatten periods for frontend
+    const studentSchedule = timetables.flatMap(tt =>
+      tt.slots.flatMap(slot =>
+        slot.periods.map(period => ({
+          id: `${tt._id}_${slot.day}_${period.periodNumber}`,
+          timetableId: tt._id,
+          college: tt.college,
+          branch: tt.branch,
+          section: tt.branch.section,
+          day: slot.day,
+          periodNumber: period.periodNumber,
+          subject: period.subject,
+          startTime: period.startTime,
+          endTime: period.endTime,
+          duration: period.duration,
+          room: `Room ${period.periodNumber}`,
+          totalClassesConducted: period.totalClassesConducted || 0,
+          totalStudentsAttended: period.totalStudentsAttended || 0,
+          attendanceHistory: period.attendanceHistory || [],
+          attendancePercentage:
+            period.totalClassesConducted > 0
+              ? Math.round((period.totalStudentsAttended / (period.totalClassesConducted * 30)) * 100) // assuming 30 students per class
+              : 0
+        }))
+      )
+    );
+
+    return res.status(200).json({
+      message: "Student timetable fetched successfully",
+      branchId,
+      day: day || "all",
+      totalClasses: studentSchedule.length,
+      schedule: studentSchedule
+    });
+  } catch (error) {
+    console.error("❌ Error fetching student timetable:", error);
     return res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };

@@ -34,7 +34,7 @@ const TimeTableSection = () => {
     useEffect(() => {
         const getTeachers = async () => {
             const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8000/api/teachers/${params.id}`, {
+            const response = await fetch(`http://localhost:8000/api/teachers/college/${params.id}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",

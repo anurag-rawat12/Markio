@@ -10,6 +10,8 @@ import AttendanceRouter from './Routes/Attendance.route.js';
 import cors from 'cors';
 import OTProuter from './Routes/OTP.route.js';
 import TeacherRouter from './Routes/Teacher.route.js';
+import StudentRouter from './Routes/Student.route.js';
+import periodRouter from './Routes/Period.route.js';
 
 const app = express();
 
@@ -32,6 +34,8 @@ app.use('/api/branches', BranchRouter);
 app.use('/api/attendance', AttendanceRouter);
 app.use('/api/otp', OTProuter);
 app.use('/api/teachers', TeacherRouter);
+app.use('/api/students', StudentRouter);
+app.use('/api/periods', periodRouter);
 
 
 

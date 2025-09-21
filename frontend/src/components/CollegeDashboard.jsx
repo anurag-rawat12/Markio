@@ -48,7 +48,7 @@ const CollegeDashboard = () => {
   useEffect(() => {
     const getTeachers = async () => {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8000/api/teachers/${params.id}`, {
+      const response = await fetch(`http://localhost:8000/api/college/${params.id}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -708,7 +708,6 @@ const CollegeDashboard = () => {
               </div>
             </div>
           )}
-
 
 
           {/* Timetable Section */}

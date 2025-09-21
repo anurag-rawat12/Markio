@@ -135,8 +135,8 @@ const TeacherDashboard = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        console.log(data)
-        setTeacherData(data);
+        console.log("teacher",data)
+        setTeacherData(data.teacher);
       }
     } catch (error) {
       console.error('Error fetching teacher data:', error);
@@ -1157,6 +1157,7 @@ const TeacherDashboard = () => {
             )}
           </DialogContent>
         </Dialog>
+        
       </div>
     </div>
   )
