@@ -1,0 +1,98 @@
+{
+  "collegeId": "68c6b998819e863507774b9c",
+  "branchId": "68cc1a303999f90d732365d7",
+  "section": "A",
+  "batch": "2023-2027",
+  "slots": [
+    {
+      "day": "Monday",
+      "periods": [
+        {
+          "periodNumber": 1,
+          "subject": "Mathematics",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
+          "startTime": "09:00",
+          "endTime": "09:50",
+          "duration": 50
+        },
+        {
+          "periodNumber": 2,
+          "subject": "Physics",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
+          "startTime": "10:00",
+          "endTime": "10:50",
+          "duration": 50
+        },
+        {
+          "periodNumber": 3,
+          "subject": "English",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
+          "startTime": "11:00",
+          "endTime": "11:50",
+          "duration": 50
+        },
+        {
+          "periodNumber": 4,
+          "subject": "Chemistry",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
+          "startTime": "12:00",
+          "endTime": "12:50",
+          "duration": 50
+        },
+        {
+          "periodNumber": 5,
+          "subject": "Computer Science",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
+          "startTime": "01:00",
+          "endTime": "01:50",
+          "duration": 50
+        }
+      ]
+    },
+    {
+      "day": "Tuesday",
+      "periods": [
+        {
+          "periodNumber": 1,
+          "subject": "Physics",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
+          "startTime": "09:00",
+          "endTime": "09:50",
+          "duration": 50
+        },
+        {
+          "periodNumber": 2,
+          "subject": "Mathematics",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
+          "startTime": "10:00",
+          "endTime": "10:50",
+          "duration": 50
+        },
+        {
+          "periodNumber": 3,
+          "subject": "History",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
+          "startTime": "11:00",
+          "endTime": "11:50",
+          "duration": 50
+        },
+        {
+          "periodNumber": 4,
+          "subject": "Chemistry",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
+          "startTime": "12:00",
+          "endTime": "12:50",
+          "duration": 50
+        },
+        {
+          "periodNumber": 5,
+          "subject": "English",
+          "teacherId": "68cc2d1f3ea7ebee53c6d5e9",
+          "startTime": "01:00",
+          "endTime": "01:50",
+          "duration": 50
+        }
+      ]
+    }
+  ]
+}
