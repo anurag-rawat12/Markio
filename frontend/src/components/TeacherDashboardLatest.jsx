@@ -38,6 +38,9 @@ const TeacherDashboard = () => {
     sessionStatus: null,
     expirationTime: null
   })
+  const [showAttendanceComplete, setShowAttendanceComplete] = useState(false)
+  const [presentStudents, setPresentStudents] = useState([])
+  const [attendanceLoading, setAttendanceLoading] = useState(false)
   const [teacherData, setTeacherData] = useState({});
   const [timetable, setTimetable] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -201,12 +204,55 @@ const TeacherDashboard = () => {
     }
 
     try {
-      setLoading(true);
+      setAttendanceLoading(true);
       const token = localStorage.getItem('token');
       const API_BASE_URL = 'http://localhost:8000/api';
-      console.log('Sending request to initialize attendance session...', currentClass);
+      console.log('Checking for existing attendance session...', currentClass);
 
+      // First check if there's an existing active session
+      const checkResponse = await fetch(`${API_BASE_URL}/attendance/check-existing`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          timetableId: currentClass.timetableId,
+          day: currentClass.day,
+          periodNumber: currentClass.periodNumber,
+          teacherId: params.id
+        })
+      });
 
+      if (checkResponse.ok) {
+        const existingData = await checkResponse.json();
+        if (existingData.hasActiveSession) {
+          console.log('Found existing attendance session:', existingData);
+          setAttendanceCode(existingData.attendanceCode);
+          setAttendanceSessionId(existingData.sessionId);
+          setAttendanceStats({
+            totalStudents: existingData.totalStudents,
+            attendanceMarked: existingData.attendanceMarked,
+            sessionStatus: 'active',
+            expirationTime: existingData.expiresAt
+          });
+
+          // Calculate remaining time
+          const expiryTime = new Date(existingData.expiresAt);
+          const now = new Date();
+          const remainingSeconds = Math.max(0, Math.floor((expiryTime - now) / 1000));
+          setRemaining(remainingSeconds);
+          setCopied(false);
+
+          // Start polling for this existing session
+          startAttendancePolling(existingData.sessionId);
+          setAttendanceLoading(false);
+          return;
+        }
+      }
+
+      // If no existing session, create a new one
+      console.log('Creating new attendance session...', currentClass);
       const response = await fetch(`${API_BASE_URL}/attendance/initialize`, {
         method: 'POST',
         headers: {
@@ -253,8 +299,66 @@ const TeacherDashboard = () => {
       console.error('Error initializing attendance:', error);
       setError(`Failed to start attendance: ${error.message}`);
     } finally {
-      setLoading(false);
+      setAttendanceLoading(false);
     }
+  };
+
+  // Function to complete attendance session
+  const completeAttendanceSession = async (sessionId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = 'http://localhost:8000/api';
+      
+      const response = await fetch(`${API_BASE_URL}/attendance/complete/${sessionId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        // Clear polling interval
+        if (window.attendancePollingInterval) {
+          clearInterval(window.attendancePollingInterval);
+          window.attendancePollingInterval = null;
+        }
+        
+        // Fetch present students and show completion modal
+        const students = await fetchPresentStudents(sessionId);
+        setAttendanceCode(null);
+        setRemaining(0);
+        setShowAttendanceComplete(true);
+        
+        console.log('Attendance session completed successfully');
+      }
+    } catch (error) {
+      console.error('Error completing attendance session:', error);
+    }
+  };
+
+  // Function to fetch present students list
+  const fetchPresentStudents = async (sessionId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = 'http://localhost:8000/api';
+      
+      const response = await fetch(`${API_BASE_URL}/attendance/present-students/${sessionId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPresentStudents(data.presentStudents || []);
+        return data.presentStudents || [];
+      }
+    } catch (error) {
+      console.error('Error fetching present students:', error);
+    }
+    return [];
   };
 
   // Function to poll attendance status
@@ -273,19 +377,32 @@ const TeacherDashboard = () => {
 
         if (response.ok) {
           const data = await response.json();
-          setAttendanceStats({
+          const currentStats = {
             totalStudents: data.totalStudents,
             attendanceMarked: data.attendanceMarked,
             sessionStatus: data.sessionStatus
-          });
+          };
+          
+          setAttendanceStats(currentStats);
+
+          // Check if attendance limit reached
+          if (data.attendanceMarked >= data.totalStudents) {
+            // Automatically complete the session
+            await completeAttendanceSession(sessionId);
+            return;
+          }
 
           // Auto-expire if session is completed or expired
           if (data.sessionStatus === 'completed' || data.sessionStatus === 'expired') {
             clearInterval(pollInterval);
+            window.attendancePollingInterval = null;
+            
             if (data.sessionStatus === 'completed') {
+              // Fetch present students and show completion modal
+              const students = await fetchPresentStudents(sessionId);
               setAttendanceCode(null);
               setRemaining(0);
-              alert(`Attendance session completed! ${data.attendanceMarked}/${data.totalStudents} students marked attendance.`);
+              setShowAttendanceComplete(true);
             }
           }
         }
@@ -293,7 +410,7 @@ const TeacherDashboard = () => {
         console.error('Error polling attendance status:', error);
         // Don't clear interval on error, keep trying
       }
-    }, 2000); // Poll every 2 seconds
+    }, 5000); // Poll every 5 seconds as requested
 
     // Store interval ID to clear it later
     setAttendanceSessionId(prev => {
@@ -313,7 +430,25 @@ const TeacherDashboard = () => {
     }
   }
 
-  const endCode = () => {
+  const endCode = async () => {
+    if (attendanceSessionId) {
+      try {
+        const token = localStorage.getItem('token');
+        const API_BASE_URL = 'http://localhost:8000/api';
+        
+        // End the session in the backend
+        await fetch(`${API_BASE_URL}/attendance/end/${attendanceSessionId}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      } catch (error) {
+        console.error('Error ending attendance session:', error);
+      }
+    }
+    
     // Clear polling interval
     if (window.attendancePollingInterval) {
       clearInterval(window.attendancePollingInterval);
@@ -408,14 +543,14 @@ const TeacherDashboard = () => {
     <div className="min-h-screen relative overflow-hidden">
       {/* Video Background */}
       <div className="fixed inset-0 z-0">
-        {/* <video 
+        <video 
           autoPlay 
           loop 
           muted 
           className="absolute inset-0 w-full h-full object-cover"
         >
           <source src="/latest-bg.mp4" type="video/mp4" />
-        </video> */}
+        </video>
         <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
       </div>
 
@@ -725,11 +860,21 @@ const TeacherDashboard = () => {
                             ) : (
                               <Button
                                 onClick={generateCode}
-                                className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-md border border-white/30 text-white hover:from-blue-500/30 hover:to-purple-500/30 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                                disabled={attendanceLoading}
+                                className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-md border border-white/30 text-white hover:from-blue-500/30 hover:to-purple-500/30 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                                 size="lg"
                               >
-                                <Timer className="w-5 h-5 mr-2" />
-                                Generate Attendance Code
+                                {attendanceLoading ? (
+                                  <>
+                                    <div className="animate-spin w-5 h-5 mr-2 border-2 border-white/30 border-t-white rounded-full"></div>
+                                    Checking Session...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Timer className="w-5 h-5 mr-2" />
+                                    Generate Attendance Code
+                                  </>
+                                )}
                               </Button>
                             )}
                           </div>
@@ -1155,6 +1300,91 @@ const TeacherDashboard = () => {
                 </div>
               </>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Attendance Completion Modal */}
+        <Dialog open={showAttendanceComplete} onOpenChange={setShowAttendanceComplete}>
+          <DialogContent className="bg-black/80 backdrop-blur-xl border-white/30 text-white max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-green-500/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-green-500/30">
+                  <CheckCircle2 className="w-6 h-6 text-green-400" />
+                </div>
+                <div>
+                  <div className="text-2xl text-white">Attendance Completed!</div>
+                  <div className="text-sm text-white/70">
+                    {presentStudents.length} students marked present
+                  </div>
+                </div>
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="py-6">
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-green-400" />
+                  Present Students ({presentStudents.length})
+                </h3>
+                
+                {presentStudents.length > 0 ? (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {presentStudents.map((student, index) => (
+                      <div
+                        key={student.enrollmentNumber || index}
+                        className="flex items-center justify-between p-4 bg-white/5 backdrop-blur-md rounded-xl border border-white/10 hover:border-green-500/30 transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                          <Avatar className="w-10 h-10">
+                            <AvatarFallback className="bg-green-500/20 text-green-200 font-bold backdrop-blur-md">
+                              {getInitials(student.name || 'Unknown')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-semibold text-white">{student.name || 'Unknown Student'}</div>
+                            <div className="text-sm text-white/70">
+                              {student.enrollmentNumber || 'No enrollment number'}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="text-right">
+                          <div className="text-sm text-green-300 font-medium">
+                            {student.markedAt ? new Date(student.markedAt).toLocaleTimeString('en-US', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : 'Time not available'}
+                          </div>
+                          <div className="text-xs text-white/60">
+                            Marked at
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-4 border border-white/20">
+                      <Users className="w-8 h-8 text-white/50" />
+                    </div>
+                    <p className="text-white/70 text-lg">No students marked attendance</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-end gap-3 pt-4 border-t border-white/20">
+                <Button
+                  onClick={() => {
+                    setShowAttendanceComplete(false);
+                    setPresentStudents([]);
+                  }}
+                  className="bg-white/20 backdrop-blur-md text-white hover:bg-white/30 border border-white/30"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
         

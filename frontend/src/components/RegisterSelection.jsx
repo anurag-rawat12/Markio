@@ -7,7 +7,7 @@ const RegisterSelection = () => {
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
       {/* Beautiful Background Image */}
       {/* Video Background (from HeroSection) */}
-      {/* <video 
+      <video 
         autoPlay 
         loop 
         muted 
@@ -17,7 +17,7 @@ const RegisterSelection = () => {
       >
         <source src="/homepage-bg-new.mp4" type="video/mp4" />
       </video>
-       */}
+      
       {/* Overlay for better text contrast */}
       <div className="absolute inset-0 bg-black/20"></div>
       

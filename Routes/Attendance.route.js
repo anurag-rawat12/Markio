@@ -3,7 +3,11 @@ import {
     initializeAttendance,
     markAttendance,
     getAttendanceStatus,
-    getAttendanceStatusByCode
+    getAttendanceStatusByCode,
+    checkExistingSession,
+    getPresentStudents,
+    completeAttendanceSession,
+    endAttendanceSession
 } from '../Controllers/Attendance.controller.js';
 import authorize, { teacherOnly } from '../Middleware/auth.middleware.js';
 
@@ -20,5 +24,17 @@ AttendanceRouter.get('/status/:sessionId', authorize, teacherOnly, getAttendance
 
 // Route to get attendance session info by code (for students to check before marking)
 AttendanceRouter.get('/code/:code', authorize, getAttendanceStatusByCode);
+
+// Route to check for existing active attendance session
+AttendanceRouter.post('/check-existing', authorize, teacherOnly, checkExistingSession);
+
+// Route to get present students list for a session
+AttendanceRouter.get('/present-students/:sessionId', authorize, teacherOnly, getPresentStudents);
+
+// Route to complete attendance session
+AttendanceRouter.post('/complete/:sessionId', authorize, teacherOnly, completeAttendanceSession);
+
+// Route to end attendance session (teacher manually ending)
+AttendanceRouter.post('/end/:sessionId', authorize, teacherOnly, endAttendanceSession);
 
 export default AttendanceRouter;

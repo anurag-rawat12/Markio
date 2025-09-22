@@ -589,14 +589,14 @@ const StudentDashboard = () => {
         <div className="min-h-screen relative overflow-hidden">
             {/* Video Background */}
             <div className="fixed inset-0 z-0">
-                {/* <video
+                <video
                     autoPlay
                     loop
                     muted
                     className="absolute inset-0 w-full h-full object-cover"
                 >
                     <source src="/latest-bg.mp4" type="video/mp4" />
-                </video> */}
+                </video>
                 <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
             </div>
 

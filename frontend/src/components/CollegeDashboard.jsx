@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import TimeTableSection from './TimeTableSection'
+import { HeaderDock } from '@/components/ui/header-dock'
 
 const CollegeDashboard = () => {
   const [activeSection, setActiveSection] = useState('overview')
@@ -47,20 +48,50 @@ const CollegeDashboard = () => {
 
   useEffect(() => {
     const getTeachers = async () => {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8000/api/college/${params.id}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // 🔑 Include JWT here
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`http://localhost:8000/api/teachers/college/${params.id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setTeachers(data.teachers || []);
+        } else {
+          console.error("Failed to fetch teachers:", response.status);
+          setTeachers([]);
         }
-      })
-      const data = await response.json();
-      setTeachers(data.teachers)
-      if (response.ok) {
-        setTeachers(data.teachers);
-      } else {
-        console.error("Failed to fetch teachers:", data);
+      } catch (error) {
+        console.error("Error fetching teachers:", error);
+        setTeachers([]);
+      }
+    }
+
+    const getStudents = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`http://localhost:8000/api/students/college/${params.id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setStudents(data.students || []);
+        } else {
+          console.error("Failed to fetch students:", response.status);
+          setStudents([]);
+        }
+      } catch (error) {
+        console.error("Error fetching students:", error);
+        setStudents([]);
       }
     }
 
@@ -83,6 +114,7 @@ const CollegeDashboard = () => {
 
     getCollege();
     getTeachers();
+    getStudents();
   }, [params.id]);
 
   // Students data
@@ -195,6 +227,27 @@ const CollegeDashboard = () => {
     alert(`Viewing students for ${branch.name}`)
   }
 
+  // Utility functions
+  const getAttendancePercentage = (student) => {
+    if (!student.attendance) return 0;
+    const { present = 0, total = 1 } = student.attendance;
+    return Math.round((present / total) * 100);
+  };
+
+  // Filtered data
+  const filteredStudents = students.filter(student => {
+    const matchesSearch = student.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         student.enrollmentNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         student.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesBranch = selectedBranch === 'all' || student.branch === selectedBranch;
+    return matchesSearch && matchesBranch;
+  });
+
+  const filteredTeachers = teachers.filter(teacher => {
+    return teacher.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           teacher.email?.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
   // Update current time every second
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -206,11 +259,12 @@ const CollegeDashboard = () => {
     const totalStudents = students.length
     const totalTeachers = teachers.length
     const totalBranches = branches.length
-    const averageAttendance = Math.round(
-      students.reduce((acc, student) =>
-        acc + (student.attendance.present / student.attendance.total * 100), 0
-      ) / students.length
-    )
+    const averageAttendance = students.length > 0 ? Math.round(
+      students.reduce((acc, student) => {
+        const percentage = getAttendancePercentage(student);
+        return acc + percentage;
+      }, 0) / students.length
+    ) : 0
 
     return { totalStudents, totalTeachers, totalBranches, averageAttendance }
   }
@@ -708,11 +762,398 @@ const CollegeDashboard = () => {
               </div>
             </div>
           )}
+          {/* Teachers Section */}
+          {activeSection === 'teachers' && (
+            <div className="h-full overflow-y-auto p-8 animate-in fade-in-0 slide-in-from-right-4 duration-500">
+              <div className="space-y-8 max-w-7xl mx-auto">
+                {/* Header with Add Button */}
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h1 className="text-5xl font-extrabold text-white mb-2" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif', fontWeight: 900, letterSpacing: '-0.02em' }}>Teachers Management</h1>
+                    <p className="text-white/80 text-lg">Manage faculty members and their assignments</p>
+                  </div>
+                  <Dialog open={showAddTeacher} onOpenChange={setShowAddTeacher}>
+                    <DialogTrigger asChild>
+                      <Button className="bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30">
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Add Teacher
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-black/80 backdrop-blur-2xl border border-white/20 text-white">
+                      <DialogHeader>
+                        <DialogTitle className="text-white">Add New Teacher</DialogTitle>
+                        <DialogDescription className="text-white/70">
+                          Add a new faculty member to your institution
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-white">Full Name</Label>
+                          <Input
+                            placeholder="Teacher's full name"
+                            className="bg-white/10 border-white/20 text-white placeholder-white/60"
+                            value={newTeacher.name}
+                            onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-white">Email</Label>
+                          <Input
+                            type="email"
+                            placeholder="teacher@techverse.edu"
+                            className="bg-white/10 border-white/20 text-white placeholder-white/60"
+                            value={newTeacher.email}
+                            onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-white">Subject Specialization</Label>
+                          <Input
+                            placeholder="e.g., Database Management"
+                            className="bg-white/10 border-white/20 text-white placeholder-white/60"
+                            value={newTeacher.subject}
+                            onChange={(e) => setNewTeacher({ ...newTeacher, subject: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-white">Experience</Label>
+                          <Input
+                            placeholder="e.g., 5 years"
+                            className="bg-white/10 border-white/20 text-white placeholder-white/60"
+                            value={newTeacher.experience}
+                            onChange={(e) => setNewTeacher({ ...newTeacher, experience: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-white">Phone</Label>
+                          <Input
+                            placeholder="+1 234-567-8900"
+                            className="bg-white/10 border-white/20 text-white placeholder-white/60"
+                            value={newTeacher.phone}
+                            onChange={(e) => setNewTeacher({ ...newTeacher, phone: e.target.value })}
+                          />
+                        </div>
+                        <Button
+                          onClick={handleAddTeacher}
+                          className="w-full bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30"
+                        >
+                          Add Teacher
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
 
+                  {/* Edit Teacher Dialog */}
+                  <Dialog open={showEditTeacher} onOpenChange={setShowEditTeacher}>
+                    <DialogContent className="bg-black/80 backdrop-blur-2xl border border-white/20 text-white">
+                      <DialogHeader>
+                        <DialogTitle className="text-white">Edit Teacher</DialogTitle>
+                        <DialogDescription className="text-white/70">
+                          Update teacher information
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-white">Full Name</Label>
+                          <Input
+                            placeholder="Teacher's full name"
+                            className="bg-white/10 border-white/20 text-white placeholder-white/60"
+                            value={newTeacher.name}
+                            onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-white">Email</Label>
+                          <Input
+                            type="email"
+                            placeholder="teacher@techverse.edu"
+                            className="bg-white/10 border-white/20 text-white placeholder-white/60"
+                            value={newTeacher.email}
+                            onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-white">Subject Specialization</Label>
+                          <Input
+                            placeholder="e.g., Database Management"
+                            className="bg-white/10 border-white/20 text-white placeholder-white/60"
+                            value={newTeacher.subject}
+                            onChange={(e) => setNewTeacher({ ...newTeacher, subject: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-white">Experience</Label>
+                          <Input
+                            placeholder="e.g., 5 years"
+                            className="bg-white/10 border-white/20 text-white placeholder-white/60"
+                            value={newTeacher.experience}
+                            onChange={(e) => setNewTeacher({ ...newTeacher, experience: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-white">Phone</Label>
+                          <Input
+                            placeholder="+1 234-567-8900"
+                            className="bg-white/10 border-white/20 text-white placeholder-white/60"
+                            value={newTeacher.phone}
+                            onChange={(e) => setNewTeacher({ ...newTeacher, phone: e.target.value })}
+                          />
+                        </div>
+                        <Button
+                          onClick={handleUpdateTeacher}
+                          className="w-full bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30"
+                        >
+                          Update Teacher
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                {/* Search and Filter */}
+                <div className="flex gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 w-4 h-4" />
+                    <Input
+                      placeholder="Search teachers..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 bg-white/10 border-white/20 text-white placeholder-white/60"
+                    />
+                  </div>
+                </div>
+
+                {/* Teachers Table */}
+                <Card className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-white">Faculty Members</CardTitle>
+                    <CardDescription className="text-white/70">
+                      Showing {filteredTeachers.length} teachers
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-white/10">
+                          <TableHead className="text-white/80">Teacher</TableHead>
+                          <TableHead className="text-white/80">Subject</TableHead>
+                          <TableHead className="text-white/80">Branches</TableHead>
+                          <TableHead className="text-white/80">Experience</TableHead>
+                          <TableHead className="text-white/80">Contact</TableHead>
+                          <TableHead className="text-white/80">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredTeachers.length > 0 ? filteredTeachers.map((teacher) => (
+                          <TableRow key={teacher._id} className="border-white/10">
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar>
+                                  <AvatarFallback className="bg-white/20 text-white">
+                                    {teacher.fullName.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="font-medium text-white">{teacher.fullName}</div>
+                                  <div className="text-sm text-white/60">{teacher.email}</div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-white">{teacher.subject || 'N/A'}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="border-white/30 text-white text-xs">
+                                {teacher.institutionName?.institutionName || 'N/A'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-white">{teacher.experience || 'N/A'}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1 text-white/70 text-sm">
+                                <Mail className="w-3 h-3" />
+                                {teacher.email}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="text-white/70 hover:text-white">
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="bg-black/80 backdrop-blur-2xl border border-white/20">
+                                  <DropdownMenuItem className="text-white hover:bg-white/10">
+                                    <Edit3 className="w-4 h-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-white hover:bg-white/10">
+                                    <Calendar className="w-4 h-4 mr-2" />
+                                    View Schedule
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-red-400 hover:bg-red-500/10">
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Remove
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        )) : (
+                          <TableRow className="border-white/10">
+                            <TableCell colSpan={6} className="text-center text-white/60 py-8">
+                              No teachers found for this college
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+
+          {/* Students Section */}
+          {activeSection === 'students' && (
+            <div className="h-full overflow-y-auto p-8 animate-in fade-in-0 slide-in-from-right-4 duration-500">
+              <div className="space-y-8 max-w-7xl mx-auto">
+                {/* Header */}
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h1 className="text-5xl font-extrabold text-white mb-2" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif', fontWeight: 900, letterSpacing: '-0.02em' }}>Students Management</h1>
+                    <p className="text-white/80 text-lg">Manage all students across branches</p>
+                  </div>
+                </div>
+
+                {/* Search and Filter */}
+                <div className="flex gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 w-4 h-4" />
+                    <Input
+                      placeholder="Search students..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 bg-white/10 border-white/20 text-white placeholder-white/60"
+                    />
+                  </div>
+                  <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                    <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white">
+                      <SelectValue placeholder="Filter by branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Branches</SelectItem>
+                      {branches.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.name}>
+                          {branch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Students Table */}
+                <Card className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-white">Students</CardTitle>
+                    <CardDescription className="text-white/70">
+                      Showing
+                      {filteredStudents.length}
+                      students
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-white/10">
+                          <TableHead className="text-white/80">Student</TableHead>
+                          <TableHead className="text-white/80">Roll Number</TableHead>
+                          <TableHead className="text-white/80">Branch</TableHead>
+                          <TableHead className="text-white/80">Year</TableHead>
+                          <TableHead className="text-white/80">Attendance</TableHead>
+                          <TableHead className="text-white/80">Contact</TableHead>
+                          <TableHead className="text-white/80">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredStudents.length > 0 ? filteredStudents.map((student) => (
+                          <TableRow key={student._id} className="border-white/10">
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar>
+                                  <AvatarFallback className="bg-white/20 text-white">
+                                    {student.fullName.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="font-medium text-white">{student.fullName}</div>
+                                  <div className="text-sm text-white/60">{student.email}</div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-white font-mono">{student.enrollmentNumber}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="border-white/30 text-white">
+                                {student.institutionName?.institutionName || 'N/A'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-white">{student.year || 'N/A'}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${getAttendancePercentage(student) >= 85 ? 'bg-green-400' :
+                                  getAttendancePercentage(student) >= 75 ? 'bg-yellow-400' : 'bg-red-400'
+                                  }`} />
+                                <span className="text-white">{getAttendancePercentage(student)}%</span>
+                                <span className="text-white/60 text-sm">
+                                  (N/A)
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1 text-white/70 text-sm">
+                                <Mail className="w-3 h-3" />
+                                {student.email}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="text-white/70 hover:text-white">
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="bg-black/80 backdrop-blur-2xl border border-white/20">
+                                  <DropdownMenuItem className="text-white hover:bg-white/10">
+                                    <User className="w-4 h-4 mr-2" />
+                                    View Profile
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-white hover:bg-white/10">
+                                    <BarChart3 className="w-4 h-4 mr-2" />
+                                    View Records
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-white hover:bg-white/10">
+                                    <Edit3 className="w-4 h-4 mr-2" />
+                                    Edit Info
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        )) : (
+                          <TableRow className="border-white/10">
+                            <TableCell colSpan={7} className="text-center text-white/60 py-8">
+                              No students found for this college
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
 
           {/* Timetable Section */}
           {activeSection === 'timetable' && (
-            <TimeTableSection/>
+            <TimeTableSection />
           )}
 
         </div>

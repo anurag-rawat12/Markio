@@ -33,7 +33,7 @@ const HeroSection = () => {
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Video Background */}
-      {/* <video 
+      <video 
         autoPlay 
         loop 
         muted 
@@ -42,7 +42,7 @@ const HeroSection = () => {
         key="homepage-video"
       >
         <source src="/homepage-bg-new.mp4" type="video/mp4" />
-      </video> */}
+      </video>
 
       {/* Overlay for better text contrast */}
       <div className="absolute inset-0 bg-black/20 z-5"></div>

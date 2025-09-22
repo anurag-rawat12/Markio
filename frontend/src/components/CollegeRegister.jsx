@@ -65,7 +65,7 @@ const CollegeRegister = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       {/* Video Background */}
-      {/* <video 
+      <video 
         autoPlay 
         loop 
         muted 
@@ -73,7 +73,7 @@ const CollegeRegister = () => {
         className="absolute inset-0 w-full h-full object-cover z-0"
       >
         <source src="/background-video.mp4" type="video/mp4" />
-      </video> */}
+      </video>
 
       {/* Overlay for better contrast */}
       <div className="absolute inset-0 bg-black/40 z-10"></div>

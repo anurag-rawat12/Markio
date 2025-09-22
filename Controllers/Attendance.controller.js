@@ -337,3 +337,191 @@ export const getAttendanceStatusByCode = async (req, res) => {
     });
   }
 };
+
+// Function to check if there's an existing active session
+export const checkExistingSession = async (req, res) => {
+  try {
+    const { timetableId, day, periodNumber, teacherId } = req.body;
+    
+    if (!timetableId || !day || !periodNumber || !teacherId) {
+      return res.status(400).json({ 
+        message: "Timetable ID, day, period number, and teacher ID are required" 
+      });
+    }
+
+    // Check if there's already an active session for this period today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const existingSession = await Period.findOne({
+      timetableId,
+      day,
+      periodNumber,
+      teacherId,
+      classDate: {
+        $gte: today,
+        $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+      },
+      sessionStatus: 'active',
+      'activeCode.expiresAt': { $gt: new Date() }
+    });
+
+    if (existingSession) {
+      return res.status(200).json({
+        hasActiveSession: true,
+        sessionId: existingSession._id,
+        attendanceCode: existingSession.activeCode.code,
+        totalStudents: existingSession.TotalStudent,
+        attendanceMarked: existingSession.TotalAttendanceMarked,
+        expiresAt: existingSession.activeCode.expiresAt
+      });
+    }
+
+    res.status(200).json({
+      hasActiveSession: false
+    });
+
+  } catch (error) {
+    res.status(500).json({ 
+      message: "Error while checking existing session", 
+      error: error.message 
+    });
+  }
+};
+
+// Function to get present students list
+export const getPresentStudents = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    if (!sessionId) {
+      return res.status(400).json({ 
+        message: "Session ID is required" 
+      });
+    }
+
+    // Find the attendance session
+    const attendanceSession = await Period.findById(sessionId)
+      .populate('attendedStudents.studentId', 'name rollNumber enrollmentNumber email');
+
+    if (!attendanceSession) {
+      return res.status(404).json({ message: "Attendance session not found" });
+    }
+
+    // Format present students data
+    const presentStudents = attendanceSession.attendedStudents.map(attendance => ({
+      studentId: attendance.studentId._id,
+      name: attendance.studentId.name,
+      enrollmentNumber: attendance.studentId.enrollmentNumber || attendance.studentId.rollNumber,
+      email: attendance.studentId.email,
+      markedAt: attendance.markedAt
+    }));
+
+    res.status(200).json({
+      sessionId: attendanceSession._id,
+      subject: attendanceSession.subject,
+      day: attendanceSession.day,
+      periodNumber: attendanceSession.periodNumber,
+      totalStudents: attendanceSession.TotalStudent,
+      attendanceMarked: attendanceSession.TotalAttendanceMarked,
+      sessionStatus: attendanceSession.sessionStatus,
+      presentStudents
+    });
+
+  } catch (error) {
+    res.status(500).json({ 
+      message: "Error while fetching present students", 
+      error: error.message 
+    });
+  }
+};
+
+// Function to complete attendance session
+export const completeAttendanceSession = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    if (!sessionId) {
+      return res.status(400).json({ 
+        message: "Session ID is required" 
+      });
+    }
+
+    // Find and update the attendance session
+    const attendanceSession = await Period.findById(sessionId);
+
+    if (!attendanceSession) {
+      return res.status(404).json({ message: "Attendance session not found" });
+    }
+
+    if (attendanceSession.sessionStatus !== 'active') {
+      return res.status(400).json({ 
+        message: "Session is not active",
+        currentStatus: attendanceSession.sessionStatus
+      });
+    }
+
+    // Mark session as completed
+    attendanceSession.sessionStatus = 'completed';
+    await attendanceSession.save();
+
+    res.status(200).json({
+      message: "Attendance session completed successfully",
+      sessionId: attendanceSession._id,
+      totalStudents: attendanceSession.TotalStudent,
+      attendanceMarked: attendanceSession.TotalAttendanceMarked,
+      sessionStatus: attendanceSession.sessionStatus
+    });
+
+  } catch (error) {
+    res.status(500).json({ 
+      message: "Error while completing attendance session", 
+      error: error.message 
+    });
+  }
+};
+
+// Function to end attendance session (teacher manually ending)
+export const endAttendanceSession = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    if (!sessionId) {
+      return res.status(400).json({ 
+        message: "Session ID is required" 
+      });
+    }
+
+    // Find and update the attendance session
+    const attendanceSession = await Period.findById(sessionId);
+
+    if (!attendanceSession) {
+      return res.status(404).json({ message: "Attendance session not found" });
+    }
+
+    if (attendanceSession.sessionStatus !== 'active') {
+      return res.status(400).json({ 
+        message: "Session is not active",
+        currentStatus: attendanceSession.sessionStatus
+      });
+    }
+
+    // Mark session as ended by teacher
+    attendanceSession.sessionStatus = 'ended';
+    await attendanceSession.save();
+
+    res.status(200).json({
+      message: "Attendance session ended successfully",
+      sessionId: attendanceSession._id,
+      totalStudents: attendanceSession.TotalStudent,
+      attendanceMarked: attendanceSession.TotalAttendanceMarked,
+      sessionStatus: attendanceSession.sessionStatus
+    });
+
+  } catch (error) {
+    res.status(500).json({ 
+      message: "Error while ending attendance session", 
+      error: error.message 
+    });
+  }
+};
