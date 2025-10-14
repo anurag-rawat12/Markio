@@ -32,7 +32,7 @@ const HeroSection = () => {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Video Background */}
+      
       <video 
         autoPlay 
         loop 
@@ -95,7 +95,7 @@ const HeroSection = () => {
               {/* Glassmorphism container for the dashboard video */}
               <div className="relative bg-white/10 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-2xl overflow-hidden transform hover:scale-105 transition-all duration-500">
                 {/* Dashboard screen recording */}
-                {/* <video 
+                <video 
                   src="/dashboard-demo.mov" 
                   autoPlay 
                   loop 
@@ -103,7 +103,7 @@ const HeroSection = () => {
                   playsInline
                   className="w-full h-auto rounded-3xl"
                   style={{ filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.15))' }}
-                /> */}
+                />
 
                 {/* Overlay gradient for better integration */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent rounded-3xl"></div>

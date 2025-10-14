@@ -50,13 +50,18 @@ const OTPsection = () => {
 
       // ✅ Save JWT after verification
       localStorage.setItem('token', data.token);
+      const decodedToken = JSON.parse(atob(data.token.split('.')[1]));
+      const id = decodedToken.id;
 
 
       // Redirect based on role
       if (info.role === 'COLLEGE') {
-        navigate('/college-dashboard');
-      } else {
-        navigate('/dashboard'); // for Teacher/Student
+        navigate(`/college/dashboard/${id}`);
+      } else if (info.role === 'TEACHER') {
+        navigate(`/teacher/dashboard/${id}`); 
+      }
+      else if (info.role === 'STUDENT') {
+        navigate(`/student/dashboard/${id}`);
       }
 
     } catch (error) {

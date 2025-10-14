@@ -383,26 +383,25 @@ export const getStudentAttendanceSimple = async (req, res) => {
             branchId: actualBranchId,
             branchInfo: timetable.branchId,
             attendance: {
-                // Summary statistics
+              
                 totalSessions,
                 attendedSessions: totalAttended,
                 absentSessions: totalSessions - totalAttended,
                 attendancePercentage: overallAttendancePercentage,
                 
-                // Attendance status based on percentage
+               
                 attendanceStatus: overallAttendancePercentage >= 75 ? 'Good' : 
                                overallAttendancePercentage >= 60 ? 'Warning' : 'Critical',
-                
-                // Subject-wise breakdown
+           
                 subjectWiseAttendance: Object.values(subjectWiseStats),
                 
-                // Detailed attendance records (recent first)
+             
                 attendanceRecords,
                 
-                // Recent 10 attendance records
+               
                 recentAttendance: attendanceRecords.slice(0, 10),
                 
-                // Metadata
+                
                 lastUpdated: new Date(),
                 dataSource: 'Period Schema (Live Sessions)'
             }
@@ -426,7 +425,7 @@ export const GetStudentById = async (req, res) => {
         }
         return res.status(200).json({ student });
     } catch (error) {
-        console.error("❌ Error fetching student:", error);
+        console.error("bhai tere se na ho paara!!! Error fetching student:", error);
         return res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };

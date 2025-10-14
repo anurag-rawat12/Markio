@@ -15,24 +15,24 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// 🔹 Send OTP
+
 export const sendOtp = async ({ email, role, userData }) => {
   try {
-    const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000); 
     const hashedOTP = await bcrypt.hash(otp.toString(), 10);
 
-    // Save OTP entry
+    
     const otpEntry = new OTPverification({
       email,
       role,
       otp: hashedOTP,
-      expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+      expiresAt: Date.now() + 10 * 60 * 1000, 
       userData,
     });
 
     await otpEntry.save();
 
-    // Send OTP email
+    
     await transporter.sendMail({
       from: EMAIL_USER,
       to: email,

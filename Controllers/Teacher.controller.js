@@ -1,11 +1,11 @@
 import Teacher from '../Models/Teachers.js';
 
-// ✅ Get all teachers of a specific colleg
+
 export const getTeachers = async (req, res) => {
   try {
     const { id } = req.params; 
 
-    // Find all teachers belonging to this college
+    
     const teachers = await Teacher.find({ institutionName: id });
 
     if (!teachers || teachers.length === 0) {
@@ -24,7 +24,6 @@ export const getTeachers = async (req, res) => {
   }
 };
 
-// ✅ Get a teacher by teacher ID
 export const getTeacherById = async (req, res) => {
   try {
     console.log("inside getTeacherById, teacherId:", req.params.id);

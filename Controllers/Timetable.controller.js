@@ -8,26 +8,26 @@ export const CreateTimetable = async (req, res) => {
   try {
     const { collegeId, branchId, slots } = req.body;
 
-    console.log("📥 Received timetable creation request:", req.body);
+    console.log(" Received timetable creation request:", req.body);
 
-    // ✅ Validate required fields
+   
     if (!collegeId || !branchId || !slots || !Array.isArray(slots)) {
       return res.status(400).json({ message: "Missing required fields or invalid slots format" });
     }
 
-    // ✅ Verify college exists
+   
     const college = await College.findById(collegeId);
     if (!college) {
       return res.status(404).json({ message: "College not found" });
     }
 
-    // ✅ Verify branch belongs to same college
+   
     const branch = await Branch.findOne({ _id: branchId, collegeId: collegeId });
     if (!branch) {
       return res.status(404).json({ message: "Branch not found or does not belong to this college" });
     }
 
-    // ✅ Validate teacher IDs in slots
+    
     for (const daySlot of slots) {
       if (!daySlot.day || !Array.isArray(daySlot.periods)) {
         return res.status(400).json({ message: "Each slot must have a day and periods array" });
@@ -45,7 +45,7 @@ export const CreateTimetable = async (req, res) => {
       }
     }
 
-    // ✅ Create timetable
+    
     const newTimetable = new TimeTable({
       collegeId,
       branchId,
@@ -54,7 +54,7 @@ export const CreateTimetable = async (req, res) => {
 
     await newTimetable.save();
 
-    // ✅ Populate references for readability
+    
     await newTimetable.populate([
       { path: "collegeId", select: "institutionName adminEmail" },
       { path: "branchId", select: "branchName branchCode section year" },
@@ -76,7 +76,7 @@ export const GetTimetableById = async (req, res) => {
   try {
     const { id } = req.params; 
 
-    // 🔹 Fetch timetable(s) for a branch
+    
     const timetables = await TimeTable.find({ collegeId: id })
       .populate([
         { path: "collegeId", select: "institutionName adminEmail" },

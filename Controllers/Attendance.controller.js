@@ -50,10 +50,19 @@ export const initializeAttendance = async (req, res) => {
     });
 
     if (existingSession) {
-      return res.status(400).json({
-        message: "An active attendance session already exists for this period today",
-        existingCode: existingSession.activeCode.code,
-        expiresAt: existingSession.activeCode.expiresAt
+      // Return existing session details instead of error
+      return res.status(200).json({
+        message: "Active attendance session found",
+        sessionId: existingSession._id,
+        attendanceCode: existingSession.activeCode.code,
+        totalStudents: existingSession.TotalStudent,
+        attendanceMarked: existingSession.TotalAttendanceMarked,
+        expiresAt: existingSession.activeCode.expiresAt,
+        timetableId: existingSession.timetableId,
+        day: existingSession.day,
+        periodNumber: existingSession.periodNumber,
+        subject: existingSession.subject,
+        isExistingSession: true
       });
     }
 
@@ -200,15 +209,22 @@ export const markAttendance = async (req, res) => {
     );
 
     res.status(200).json({
-      message: "Attendance marked successfully",
-      sessionId: attendanceSession._id,
-      subject: attendanceSession.subject,
-      day: attendanceSession.day,
-      periodNumber: attendanceSession.periodNumber,
-      attendanceMarked: attendanceSession.TotalAttendanceMarked,
-      totalStudents: attendanceSession.TotalStudent,
-      sessionStatus: attendanceSession.sessionStatus,
-      markedAt: new Date()
+      success: true,
+      message: "🎉 Attendance marked successfully!",
+      details: {
+        subject: attendanceSession.subject,
+        day: attendanceSession.day,
+        periodNumber: attendanceSession.periodNumber,
+        markedAt: new Date().toLocaleString(),
+        status: "Present"
+      },
+      sessionInfo: {
+        sessionId: attendanceSession._id,
+        attendanceMarked: attendanceSession.TotalAttendanceMarked,
+        totalStudents: attendanceSession.TotalStudent,
+        sessionStatus: attendanceSession.sessionStatus,
+        attendancePercentage: Math.round((attendanceSession.TotalAttendanceMarked / attendanceSession.TotalStudent) * 100)
+      }
     });
 
   } catch (error) {
@@ -521,6 +537,149 @@ export const endAttendanceSession = async (req, res) => {
   } catch (error) {
     res.status(500).json({ 
       message: "Error while ending attendance session", 
+      error: error.message 
+    });
+  }
+};
+
+// Function to get real-time attendance count (for teacher dashboard polling)
+export const getRealTimeAttendanceCount = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    if (!sessionId) {
+      return res.status(400).json({ 
+        message: "Session ID is required" 
+      });
+    }
+
+    // Find the attendance session with fresh data from database
+    const attendanceSession = await Period.findById(sessionId).lean();
+
+    if (!attendanceSession) {
+      return res.status(404).json({ message: "Attendance session not found" });
+    }
+
+    // Check if session is still active
+    const now = new Date();
+    const isExpired = now > new Date(attendanceSession.activeCode.expiresAt);
+    const isCompleted = attendanceSession.TotalAttendanceMarked >= attendanceSession.TotalStudent;
+    
+    let sessionStatus = attendanceSession.sessionStatus;
+    let needsUpdate = false;
+    
+    // Update status if needed
+    if (sessionStatus === 'active' && (isExpired || isCompleted)) {
+      sessionStatus = isExpired ? 'expired' : 'completed';
+      needsUpdate = true;
+    }
+
+    // Update the session status in database if needed
+    if (needsUpdate) {
+      await Period.findByIdAndUpdate(sessionId, { sessionStatus });
+    }
+
+    // Calculate attendance percentage
+    const attendancePercentage = attendanceSession.TotalStudent > 0 
+      ? Math.round((attendanceSession.TotalAttendanceMarked / attendanceSession.TotalStudent) * 100)
+      : 0;
+
+    // Calculate time remaining
+    const timeRemaining = sessionStatus === 'active' 
+      ? Math.max(0, Math.floor((new Date(attendanceSession.activeCode.expiresAt) - now) / 1000))
+      : 0;
+
+    console.log(`📊 Real-time update: ${attendanceSession.TotalAttendanceMarked}/${attendanceSession.TotalStudent} students (${attendancePercentage}%)`);
+
+    res.status(200).json({
+      sessionId: attendanceSession._id,
+      attendanceMarked: attendanceSession.TotalAttendanceMarked,
+      totalStudents: attendanceSession.TotalStudent,
+      attendancePercentage,
+      sessionStatus,
+      isActive: sessionStatus === 'active',
+      timeRemaining,
+      lastUpdated: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error fetching real-time attendance:', error);
+    res.status(500).json({ 
+      message: "Error while fetching real-time attendance count", 
+      error: error.message 
+    });
+  }
+};
+
+// Function to check if student has already marked attendance for current active sessions
+export const checkStudentAttendanceStatus = async (req, res) => {
+  try {
+    const { studentId, timetableId, day, periodNumber } = req.query;
+    
+    if (!studentId) {
+      return res.status(400).json({ 
+        message: "Student ID is required" 
+      });
+    }
+
+    // Find active sessions for today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let query = {
+      classDate: {
+        $gte: today,
+        $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+      },
+      sessionStatus: 'active',
+      'activeCode.expiresAt': { $gt: new Date() }
+    };
+
+    // If specific period info is provided, filter by it
+    if (timetableId && day && periodNumber) {
+      query.timetableId = timetableId;
+      query.day = day;
+      query.periodNumber = parseInt(periodNumber);
+    }
+
+    const activeSessions = await Period.find(query);
+    
+    const attendanceStatus = [];
+
+    for (const session of activeSessions) {
+      const hasMarkedAttendance = session.attendedStudents.some(
+        student => student.studentId.toString() === studentId
+      );
+      
+      attendanceStatus.push({
+        sessionId: session._id,
+        timetableId: session.timetableId,
+        subject: session.subject,
+        day: session.day,
+        periodNumber: session.periodNumber,
+        attendanceCode: session.activeCode.code,
+        hasMarkedAttendance,
+        markedAt: hasMarkedAttendance ? 
+          session.attendedStudents.find(s => s.studentId.toString() === studentId)?.markedAt : null,
+        expiresAt: session.activeCode.expiresAt,
+        totalStudents: session.TotalStudent,
+        attendanceMarked: session.TotalAttendanceMarked,
+        attendancePercentage: Math.round((session.TotalAttendanceMarked / session.TotalStudent) * 100)
+      });
+    }
+
+    res.status(200).json({
+      studentId,
+      activeSessions: attendanceStatus,
+      hasActiveAttendance: attendanceStatus.length > 0,
+      markedSessions: attendanceStatus.filter(s => s.hasMarkedAttendance),
+      pendingSessions: attendanceStatus.filter(s => !s.hasMarkedAttendance)
+    });
+
+  } catch (error) {
+    console.error('Error checking student attendance status:', error);
+    res.status(500).json({ 
+      message: "Error while checking attendance status", 
       error: error.message 
     });
   }

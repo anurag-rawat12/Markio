@@ -7,7 +7,9 @@ import {
     checkExistingSession,
     getPresentStudents,
     completeAttendanceSession,
-    endAttendanceSession
+    endAttendanceSession,
+    getRealTimeAttendanceCount,
+    checkStudentAttendanceStatus
 } from '../Controllers/Attendance.controller.js';
 import authorize, { teacherOnly } from '../Middleware/auth.middleware.js';
 
@@ -36,5 +38,11 @@ AttendanceRouter.post('/complete/:sessionId', authorize, teacherOnly, completeAt
 
 // Route to end attendance session (teacher manually ending)
 AttendanceRouter.post('/end/:sessionId', authorize, teacherOnly, endAttendanceSession);
+
+// Route to get real-time attendance count (for teacher dashboard polling)
+AttendanceRouter.get('/realtime/:sessionId', authorize, teacherOnly, getRealTimeAttendanceCount);
+
+// Route to check student attendance status for active sessions
+AttendanceRouter.get('/student-status', authorize, checkStudentAttendanceStatus);
 
 export default AttendanceRouter;
